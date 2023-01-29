@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Parser CNAB</title>
+  </head>
+
+  <body>
+    <form class="formContainer" method="post">
+      <input type="file" class="fileSend" id="fileInput" name="fileInput">
+  </form>
+
+    <ul class="dataBalance"></ul>
+
+    <script>
+      const upFile = document.getElementById("fileInput");
+      const baseUrl = "http://127.0.0.1:8000/api/data/";
+
+      const homepage = async () => {
+        const response = await fetch(baseUrl);
+        const data = await response.json();
+        const datas = [];
+        let counter = 0;
+
+        const balanceContainer = document.querySelector(".dataBalance");
+        balanceContainer.innerHTML = ``;
+
+        for (let i = 0; i < data.length; i++) {
+          for (let c = 0; c < data.length; c++) {
+            if (data[i].company_name === datas[c]?.company_name) {
+              counter++;
+            }
+          }
+
+          if (counter === 0) {
+            data[i]["balance"] = 0;
+            datas.push(data[i]);
+          }
+          counter = 0;
+        }
+
+        for (let i = 0; i < datas.length; i++) {
+          for (let c = 0; c < data.length; c++) {
+            if (datas[i].company_name === data[c].company_name) {
+              if (
+                data[c].type === 2 ||
+                data[c].type === 3 ||
+                data[c].type === 9
+              ) {
+                datas[i].balance -= data[c].value;
+              } else {
+                datas[i].balance += data[c].value;
+              }
+            }
+          }
+        }
+
+        datas.forEach((data) => {
+          let info = document.createElement("li");
+
+          info.innerHTML = `
+                <p>Empresa: ${data.company_name}</p>
+                <p>Saldo Total: ${data.balance.toFixed(2)}</p>
+                `;
+
+          balanceContainer.appendChild(info);
+        });
+      };
+
+      const submitArchive = (file) => {
+        const request = new XMLHttpRequest();
+        const formData = new FormData();
+
+        request.open("POST", baseUrl, true);
+        request.setRequestHeader("Content-type", "text/plain");
+
+        formData.append("file", file);
+        request.send(formData.get("file"));
+
+        setTimeout(() => {
+          document.location.reload(true);
+        }, 3000);
+      };
+
+      upFile.addEventListener("change", (event) => {
+        const file = event.target.files;
+        submitArchive(file[0]);
+      });
+
+      homepage();
+    </script>
+  </body>
+</html>
